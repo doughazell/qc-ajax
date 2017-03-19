@@ -1,0 +1,27 @@
+<h1>Newsletters</h1>
+
+<div id="flash_notice">Delivery status</div>
+
+<%
+=begin %>
+----------------------------------------------
+<h2>Delivery status</h2>
+<div id="status"></div>
+----------------------------------------------
+<%
+=end %>
+
+<% @newsletters.each do |newsletter| %>
+  <div class="newsletter">
+    <h2><%= newsletter.subject %></h2>
+    
+    <div id="delivered<%= newsletter.id %>">
+      <% if newsletter.delivered_at.present? %>
+        Delivered on <%= newsletter.delivered_at.strftime("%B %d, %Y at %H:%M:%S") %><br />
+      <% end %>
+    </div>
+    
+    <%= link_to "Deliver Newsletter", deliver_newsletter_path(newsletter), method: :post, id: "deliver" %>
+
+  </div>
+<% end %>

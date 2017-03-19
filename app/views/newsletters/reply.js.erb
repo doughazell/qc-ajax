@@ -1,0 +1,15 @@
+$("#flash_notice").slideDown();
+
+$("#flash_notice").html("Delivered letter <%= params[:id] %>");
+
+setTimeout(function() {
+  $('#flash_notice').slideUp();
+}, 3000);
+
+<%# debugger %>
+
+<% if @newsletter.delivered_at.present? %>
+  $("#delivered<%= params[:id] %>").html("Delivered on <%= @newsletter.delivered_at.strftime("%B %d, %Y at %H:%M:%S") %><br />");
+<% else %>
+  $("#delivered<%= params[:id] %>").html("<%= @newsletter.id %> not yet delivered...");
+<% end %>
