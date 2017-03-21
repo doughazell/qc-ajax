@@ -1,7 +1,10 @@
 source 'https://rubygems.org'
 
 #gem 'rails', '3.2.3'
-gem 'rails', '4.0.4'
+#gem 'rails', '4.0.4'
+
+# 21/3/17 DH: Upgrading and resolving raised issues
+gem 'rails'
 
 # Bundle edge Rails instead:
 # gem 'rails', :git => 'git://github.com/rails/rails.git'
@@ -39,7 +42,10 @@ gem 'jquery-rails'
 
 # To use debugger
 #gem 'ruby-debug19', :require => 'ruby-debug'
-gem 'debugger'
+
+# 21/3/17 DH: Upgrading and resolving raised issues
+#gem 'debugger'
+gem 'byebug'
 
 #gem 'queue_classic', '2.0.0rc12'
 gem 'queue_classic', '3.1.0'
