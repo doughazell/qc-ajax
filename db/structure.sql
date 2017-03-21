@@ -38,7 +38,10 @@ CREATE TABLE queue_classic_jobs (
     q_name character varying(255),
     method character varying(255),
     args text,
-    locked_at timestamp without time zone
+    locked_at timestamp without time zone,
+    created_at timestamp with time zone DEFAULT now(),
+    locked_by integer,
+    scheduled_at timestamp with time zone DEFAULT now()
 );
 
 
@@ -63,7 +66,7 @@ CREATE FUNCTION lock_head(q_name character varying, top_boundary integer) RETURN
     LANGUAGE plpgsql
     AS $_$
 DECLARE
-  unlocked integer;
+  unlocked bigint;
   relative_top integer;
   job_count integer;
 BEGIN
@@ -72,8 +75,12 @@ BEGIN
   -- for more workers. Would love to see some optimization here...
 
   EXECUTE 'SELECT count(*) FROM '
-    || '(SELECT * FROM queue_classic_jobs WHERE q_name = '
+    || '(SELECT * FROM queue_classic_jobs '
+    || ' WHERE locked_at IS NULL'
+    || ' AND q_name = '
     || quote_literal(q_name)
+    || ' AND scheduled_at <= '
+    || quote_literal(now())
     || ' LIMIT '
     || quote_literal(top_boundary)
     || ') limited'
@@ -92,6 +99,8 @@ BEGIN
         || ' WHERE locked_at IS NULL'
         || ' AND q_name = '
         || quote_literal(q_name)
+        || ' AND scheduled_at <= '
+        || quote_literal(now())
         || ' ORDER BY id ASC'
         || ' LIMIT 1'
         || ' OFFSET ' || quote_literal(relative_top)
@@ -105,7 +114,8 @@ BEGIN
   END LOOP;
 
   RETURN QUERY EXECUTE 'UPDATE queue_classic_jobs '
-    || ' SET locked_at = (CURRENT_TIMESTAMP)'
+    || ' SET locked_at = (CURRENT_TIMESTAMP),'
+    || ' locked_by = (select pg_backend_pid())'
     || ' WHERE id = $1'
     || ' AND locked_at is NULL'
     || ' RETURNING *'
@@ -114,6 +124,30 @@ BEGIN
   RETURN;
 END;
 $_$;
+
+
+--
+-- Name: queue_classic_notify(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION queue_classic_notify() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$ begin
+  perform pg_notify(new.q_name, '');
+  return null;
+end $$;
+
+
+--
+-- Name: ar_internal_metadata; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE ar_internal_metadata (
+    key character varying NOT NULL,
+    value character varying,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
 
 
 --
@@ -191,6 +225,14 @@ ALTER TABLE ONLY queue_classic_jobs ALTER COLUMN id SET DEFAULT nextval('queue_c
 
 
 --
+-- Name: ar_internal_metadata_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY ar_internal_metadata
+    ADD CONSTRAINT ar_internal_metadata_pkey PRIMARY KEY (key);
+
+
+--
 -- Name: newsletters_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -204,6 +246,13 @@ ALTER TABLE ONLY newsletters
 
 ALTER TABLE ONLY queue_classic_jobs
     ADD CONSTRAINT queue_classic_jobs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: idx_qc_on_scheduled_at_only_unlocked; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX idx_qc_on_scheduled_at_only_unlocked ON queue_classic_jobs USING btree (scheduled_at, id) WHERE (locked_at IS NULL);
 
 
 --
@@ -221,11 +270,21 @@ CREATE UNIQUE INDEX unique_schema_migrations ON schema_migrations USING btree (v
 
 
 --
+-- Name: queue_classic_notify; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER queue_classic_notify AFTER INSERT ON queue_classic_jobs FOR EACH ROW EXECUTE PROCEDURE queue_classic_notify();
+
+
+--
 -- PostgreSQL database dump complete
 --
 
-INSERT INTO schema_migrations (version) VALUES ('20120418194819');
+SET search_path TO "$user",public;
 
-INSERT INTO schema_migrations (version) VALUES ('20120418213929');
+INSERT INTO "schema_migrations" (version) VALUES
+('20120418194819'),
+('20120418213929'),
+('20120418213940');
 
-INSERT INTO schema_migrations (version) VALUES ('20120418213940');
+

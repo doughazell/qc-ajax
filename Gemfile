@@ -53,4 +53,5 @@ gem 'queue_classic', '3.1.0'
 #gem 'queue_classic', '2.2.3'
 
 # 13/3/17 DH: Upgrading to 4.0 in order to use 'ApplicationController::after_action'
-gem 'protected_attributes'
+# 21/3/17 DH: Blocks upgrade to Rails 5 since 'activemodel (>= 4.0.1, < 5.0)'
+#gem 'protected_attributes'

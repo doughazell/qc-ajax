@@ -51,7 +51,12 @@ module Mailer
     #config.active_record.whitelist_attributes = true
     
     # 13/3/17 DH: Upgrading to 4.1 from 3.2.3 to use 'ApplicationController::after_action'
-    config.active_record.whitelist_attributes = false
+    #config.active_record.whitelist_attributes = false
+
+    # 21/3/17 DH: Upgrading to 5.0.2
+    puts "-----------------------------------------------------------------"
+    puts "Commented out 'config.active_record.whitelist_attributes = false'"
+    puts "-----------------------------------------------------------------"
 
     # Enable the asset pipeline
     config.assets.enabled = true
